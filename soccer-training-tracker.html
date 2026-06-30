@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beast on the Ball — Training Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10140D;
+    --bg-elevated:#1A2017;
+    --bg-card:#1E2519;
+    --line:#2C3526;
+    --chalk:#F4F1E6;
+    --muted:#8C9485;
+    --muted-dim:#5C6356;
+    --turf:#3F7D44;
+    --turf-deep:#2A5630;
+    --turf-bright:#9EFF57;
+    --amber:#E8A33D;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:760px;
+    margin:0 auto;
+    padding:28px 18px 60px;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    margin-bottom:24px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--turf-bright);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(38px,9vw,56px);
+    letter-spacing:.02em;
+    margin:0 0 2px;
+    line-height:.95;
+    color:var(--chalk);
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size:14px;
+    margin-bottom:20px;
+  }
+
+  /* ---------- PITCH PROGRESS STRIP ---------- */
+  .pitch-strip{
+    position:relative;
+    display:flex;
+    gap:3px;
+    height:34px;
+    margin-bottom:8px;
+  }
+  .pitch-seg{
+    position:relative;
+    flex:1;
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .pitch-seg-fill{
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:0%;
+    background:linear-gradient(90deg, var(--turf-deep), var(--turf));
+    transition:width .4s ease;
+  }
+  .pitch-seg-fill.full{
+    background:linear-gradient(90deg, var(--turf), var(--turf-bright));
+  }
+  .pitch-seg-label{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:13px;
+    letter-spacing:.05em;
+    color:var(--chalk);
+    z-index:2;
+    text-shadow:0 1px 3px rgba(0,0,0,.6);
+  }
+  .progress-meta{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:26px;
+  }
+  .progress-meta b{ color:var(--turf-bright); font-weight:700; }
+
+  /* ---------- WEEK TABS ---------- */
+  .week-tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:14px;
+  }
+  .week-tab{
+    flex:1;
+    aspect-ratio:1/0.62;
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-family:'Bebas Neue',sans-serif;
+    color:var(--muted);
+    transition:all .15s ease;
+    padding:6px 2px;
+  }
+  .week-tab .num{ font-size:20px; line-height:1; color:inherit; }
+  .week-tab .tag{ font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-dim); margin-top:2px;}
+  .week-tab.active{
+    background:var(--turf-deep);
+    border-color:var(--turf-bright);
+    color:var(--chalk);
+  }
+  .week-tab.active .tag{ color:var(--turf-bright); }
+  .week-tab:hover{ border-color:var(--turf); }
+
+  .phase-banner{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin:18px 2px 16px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+  .phase-banner .phase-name{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:22px;
+    letter-spacing:.03em;
+    color:var(--turf-bright);
+  }
+  .phase-banner .phase-desc{
+    font-size:12.5px;
+    color:var(--muted);
+  }
+
+  /* ---------- DAY CARDS ---------- */
+  .day-card{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .day-card.complete{
+    border-color:var(--turf-bright);
+    box-shadow:0 0 0 1px rgba(158,255,87,.15);
+  }
+  .day-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 16px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .day-num{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:26px;
+    color:var(--muted-dim);
+    width:34px;
+    flex-shrink:0;
+  }
+  .day-card.complete .day-num{ color:var(--turf-bright); }
+  .day-info{ flex:1; min-width:0; }
+  .day-focus{
+    font-weight:700;
+    font-size:14.5px;
+    color:var(--chalk);
+  }
+  .day-focus .opt{
+    font-size:10px;
+    font-weight:600;
+    color:var(--amber);
+    border:1px solid var(--amber);
+    border-radius:4px;
+    padding:1px 5px;
+    margin-left:6px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    vertical-align:middle;
+  }
+  .day-sub{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:1px;
+  }
+  .day-badge{
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:4px 10px;
+    flex-shrink:0;
+  }
+  .day-card.complete .day-badge{
+    color:#0E1A0A;
+    background:var(--turf-bright);
+    border-color:var(--turf-bright);
+  }
+  .chevron{
+    width:10px; height:10px;
+    border-right:2px solid var(--muted);
+    border-bottom:2px solid var(--muted);
+    transform:rotate(-45deg);
+    transition:transform .2s ease;
+    flex-shrink:0;
+    margin-right:2px;
+  }
+  .day-card.expanded .chevron{ transform:rotate(45deg); }
+
+  .day-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .day-card.expanded .day-body{
+    max-height:900px;
+  }
+  .block-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 16px;
+    border-top:1px solid var(--line);
+  }
+  .block-check{
+    width:21px; height:21px;
+    flex-shrink:0;
+    border-radius:6px;
+    border:2px solid var(--muted-dim);
+    background:transparent;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+  }
+  .block-check.checked{
+    background:var(--turf-bright);
+    border-color:var(--turf-bright);
+  }
+  .block-check.checked::after{
+    content:'';
+    width:5px; height:9px;
+    border-right:2px solid #0E1A0A;
+    border-bottom:2px solid #0E1A0A;
+    transform:rotate(45deg) translate(-1px,-1px);
+  }
+  .block-text{ flex:1; min-width:0; }
+  .block-label{
+    font-size:10px;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .block-drill{
+    font-size:13.5px;
+    color:var(--chalk);
+    margin-top:1px;
+    text-decoration:line-through;
+    text-decoration-color:transparent;
+    transition:.15s;
+  }
+  .block-row.is-checked .block-drill{
+    color:var(--muted);
+    text-decoration-color:var(--muted-dim);
+  }
+  .watch-btn{
+    flex-shrink:0;
+    font-size:11.5px;
+    font-weight:700;
+    color:#0E1A0A;
+    background:var(--turf-bright);
+    border-radius:6px;
+    padding:7px 11px;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+  }
+  .watch-btn:hover{ filter:brightness(1.1); }
+  .watch-btn::before{
+    content:'';
+    width:0; height:0;
+    border-top:4px solid transparent;
+    border-bottom:4px solid transparent;
+    border-left:6px solid #0E1A0A;
+  }
+
+  /* ---------- FOOTER ---------- */
+  .footer-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:26px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .footer-note{ font-size:11px; color:var(--muted-dim); }
+  .reset-btn{
+    font-size:11.5px;
+    color:var(--muted);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 12px;
+    cursor:pointer;
+  }
+  .reset-btn:hover{ border-color:#C45B4B; color:#C45B4B; }
+
+  .loading{
+    text-align:center;
+    padding:60px 0;
+    color:var(--muted);
+    font-size:13px;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading">Loading your training log…</div>
+</div>
+
+<script>
+(function(){
+
+  /* ---------------- DRILL LIBRARY ---------------- */
+  const PASSING_FIXED = { title:"Brandon Passing", url:"https://m.youtube.com/watch?v=9R4uUEVJfSc" };
+
+  const POOLS = {
+    warmup: [
+      { title:"Ball Mastery — Beginner Series", url:"https://youtu.be/U3N_qXaqrtI" },
+      { title:"More Ball Mastery Drills", url:"https://youtu.be/fR4RHIqH8nA?si=e4rRV9UrCDDh96gC" },
+      { title:"Ronaldinho Skills Inspiration", url:"https://youtube.com/shorts/iAHhexcTRPk?si=nqZcpoiLwrpPKiQR" }
+    ],
+    touch: [
+      { title:"Become Elite — Wall Passing & Juggling", url:"https://youtu.be/LoJ5dsFz59s?si=3Ht9YPPiCJcQmDHS" },
+      { title:"Become Elite — 10,000 Touches", url:"https://youtu.be/wjFihKoBs24?si=PO4IFHuYIQJ0Pvn2" }
+    ],
+    dribbling: [
+      { title:"Become Elite — Dribbling in a Box", url:"https://youtu.be/CgsymJy0RJk?si=Ofi2OpOwH8lwYohI" },
+      { title:"Coach Joe — Dribbling Sequence", url:"https://youtu.be/ILy-8bEDjbw?si=No9YCCQDxez1yHpA" },
+      { title:"Cone Weave Drills", url:"https://youtu.be/Y9dP9BegkRA?si=UKQzBfacbC-eyV2Z" }
+    ],
+    speed: [
+      { title:"5 Good Drills", url:"https://youtu.be/1e398zxntfQ?si=U3hQz36SJVO7ISvu" },
+      { title:"Drills Playlist — Vol. 1", url:"https://youtube.com/playlist?list=PLsMCH4VQzvh35t5wlKplubUkScKgl-o6n&si=Nmwirqf0K1CcO38X" },
+      { title:"#1 Drills Playlist", url:"https://youtube.com/playlist?list=PLsMCH4VQzvh2VtCCWbmH7hoapOv-JWsqO&si=KGrbyHB2yRbu4aio" }
+    ],
+    cooldown: [
+      { title:"Wall Passing & Juggling (Cooldown Reps)", url:"https://youtu.be/LoJ5dsFz59s?si=3Ht9YPPiCJcQmDHS" },
+      { title:"Full Training Sessions Playlist", url:"https://youtube.com/playlist?list=PLeNLZ73biGesf-gLRdjYN0UtgOgqCftg9&si=EXOhPpiazf4GFF_A" }
+    ]
+  };
+
+  const BLOCK_DEFS = [
+    { key:"warmup",    label:"Warm-Up & Ball Mastery" },
+    { key:"touch",     label:"First Touch & Receiving" },
+    { key:"passing",   label:"Passing Technique" },
+    { key:"dribbling", label:"Dribbling / 1v1" },
+    { key:"speed",     label:"Speed of Play / Combination" },
+    { key:"cooldown",  label:"Cooldown & Juggling" }
+  ];
+
+  const DAY_FOCUS = [
+    { label:"Change of Direction", sub:"Cone cuts, drag-backs, direction changes" },
+    { label:"1v1 Attacking",       sub:"Beat-the-defender moves, explosive first step" },
+    { label:"Close Control",       sub:"Shielding, turning, tight-space dribbling" },
+    { label:"Change of Direction", sub:"Build — same focus, higher speed" },
+    { label:"1v1 Attacking / Catch-Up", sub:"Build, or use to repeat your weakest block", optional:true }
+  ];
+
+  const PHASES = {
+    1:{ name:"Foundation",  desc:"Build clean technique before adding speed." },
+    2:{ name:"Foundation",  desc:"Build clean technique before adding speed." },
+    3:{ name:"Integration", desc:"Add pressure, pace, and decisions." },
+    4:{ name:"Integration", desc:"Add pressure, pace, and decisions." },
+    5:{ name:"Game Speed",  desc:"Full speed, scanning, game-realistic reps." },
+    6:{ name:"Game Speed",  desc:"Full speed, scanning, game-realistic reps." }
+  };
+
+  const WEEKS = 6, DAYS = 5;
+
+  /* ---------------- BUILD SESSIONS ---------------- */
+  let globalIdx = 0;
+  const SESSIONS = [];
+  for(let w=1; w<=WEEKS; w++){
+    for(let d=1; d<=DAYS; d++){
+      const blocks = BLOCK_DEFS.map(b=>{
+        let drill;
+        if(b.key === "passing"){
+          drill = PASSING_FIXED;
+        } else {
+          const pool = POOLS[b.key];
+          drill = pool[globalIdx % pool.length];
+        }
+        return { key:b.key, label:b.label, drill };
+      });
+      SESSIONS.push({ week:w, day:d, focus:DAY_FOCUS[d-1], blocks });
+      globalIdx++;
+    }
+  }
+
+  /* ---------------- STATE ---------------- */
+  let progress = {};      // { "w-d": { blockKey: true, ... } }
+  let currentWeek = 1;
+  let storageReady = false;
+
+  function sessionKey(w,d){ return w + "-" + d; }
+
+  function isBlockChecked(w,d,key){
+    const s = progress[sessionKey(w,d)];
+    return !!(s && s[key]);
+  }
+
+  function checkedCount(w,d){
+    const s = progress[sessionKey(w,d)];
+    if(!s) return 0;
+    return BLOCK_DEFS.reduce((n,b)=> n + (s[b.key] ? 1 : 0), 0);
+  }
+
+  function weekFraction(w){
+    let total = 0, done = 0;
+    for(let d=1; d<=DAYS; d++){
+      total += BLOCK_DEFS.length;
+      done += checkedCount(w,d);
+    }
+    return total ? done/total : 0;
+  }
+
+  function totalSessionsComplete(){
+    let n = 0;
+    for(let w=1; w<=WEEKS; w++)
+      for(let d=1; d<=DAYS; d++)
+        if(checkedCount(w,d) === BLOCK_DEFS.length) n++;
+    return n;
+  }
+
+  async function loadProgress(){
+    try{
+      const res = await window.storage.get('progress', false);
+      if(res && res.value){
+        progress = JSON.parse(res.value);
+      }
+    }catch(e){
+      progress = {};
+    }
+    storageReady = true;
+  }
+
+  async function saveProgress(){
+    try{
+      await window.storage.set('progress', JSON.stringify(progress), false);
+    }catch(e){
+      console.error('Save failed', e);
+    }
+  }
+
+  function toggleBlock(w,d,key){
+    const sk = sessionKey(w,d);
+    if(!progress[sk]) progress[sk] = {};
+    progress[sk][key] = !progress[sk][key];
+    saveProgress();
+    render();
+  }
+
+  async function resetAll(){
+    if(!confirm("Clear all checked sessions? This can't be undone.")) return;
+    progress = {};
+    await saveProgress();
+    render();
+  }
+
+  /* ---------------- EXPAND STATE ---------------- */
+  let expanded = {}; // sessionKey -> bool
+  function toggleExpand(w,d){
+    const sk = sessionKey(w,d);
+    expanded[sk] = !expanded[sk];
+    render();
+  }
+
+  /* ---------------- RENDER ---------------- */
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function render(){
+    const app = document.getElementById('app');
+    if(!storageReady){
+      app.innerHTML = '<div class="loading">Loading your training log…</div>';
+      return;
+    }
+
+    const totalDone = totalSessionsComplete();
+    const totalSessions = WEEKS*DAYS;
+
+    // pitch strip segments (one per week)
+    let stripHtml = '<div class="pitch-strip">';
+    for(let w=1; w<=WEEKS; w++){
+      const frac = weekFraction(w);
+      const pct = Math.round(frac*100);
+      stripHtml += `
+        <div class="pitch-seg">
+          <div class="pitch-seg-fill ${pct===100?'full':''}" style="width:${pct}%"></div>
+          <div class="pitch-seg-label">W${w}</div>
+        </div>`;
+    }
+    stripHtml += '</div>';
+
+    // week tabs
+    let tabsHtml = '<div class="week-tabs">';
+    for(let w=1; w<=WEEKS; w++){
+      tabsHtml += `
+        <div class="week-tab ${w===currentWeek?'active':''}" data-week="${w}">
+          <div class="num">${w}</div>
+          <div class="tag">${PHASES[w].name}</div>
+        </div>`;
+    }
+    tabsHtml += '</div>';
+
+    // phase banner
+    const phase = PHASES[currentWeek];
+    const phaseHtml = `
+      <div class="phase-banner">
+        <div class="phase-name">${phase.name}</div>
+        <div class="phase-desc">${phase.desc}</div>
+      </div>`;
+
+    // day cards
+    let daysHtml = '';
+    for(let d=1; d<=DAYS; d++){
+      const session = SESSIONS.find(s=>s.week===currentWeek && s.day===d);
+      const sk = sessionKey(currentWeek,d);
+      const done = checkedCount(currentWeek,d);
+      const isComplete = done === BLOCK_DEFS.length;
+      const isExpanded = !!expanded[sk];
+
+      let blocksHtml = '';
+      session.blocks.forEach(b=>{
+        const checked = isBlockChecked(currentWeek,d,b.key);
+        blocksHtml += `
+          <div class="block-row ${checked?'is-checked':''}">
+            <div class="block-check ${checked?'checked':''}" data-toggle="${currentWeek}|${d}|${b.key}"></div>
+            <div class="block-text">
+              <div class="block-label">${b.label}</div>
+              <div class="block-drill">${escapeHtml(b.drill.title)}</div>
+            </div>
+            <a class="watch-btn" href="${b.drill.url}" target="_blank" rel="noopener">Watch</a>
+          </div>`;
+      });
+
+      daysHtml += `
+        <div class="day-card ${isComplete?'complete':''} ${isExpanded?'expanded':''}">
+          <div class="day-header" data-expand="${currentWeek}|${d}">
+            <div class="day-num">D${d}</div>
+            <div class="day-info">
+              <div class="day-focus">${session.focus.label}${session.focus.optional?'<span class="opt">Optional</span>':''}</div>
+              <div class="day-sub">${session.focus.sub}</div>
+            </div>
+            <div class="day-badge">${done}/${BLOCK_DEFS.length}</div>
+            <div class="chevron"></div>
+          </div>
+          <div class="day-body">${blocksHtml}</div>
+        </div>`;
+    }
+
+    app.innerHTML = `
+      <div class="hero">
+        <div class="eyebrow">6-Week Technical Plan</div>
+        <h1>Beast on the Ball</h1>
+        <div class="subtitle">Check off each block as you finish it. Tap Watch to pull up the drill.</div>
+        ${stripHtml}
+        <div class="progress-meta">
+          <span>Overall sessions complete</span>
+          <span><b>${totalDone}</b> / ${totalSessions}</span>
+        </div>
+        ${tabsHtml}
+      </div>
+      ${phaseHtml}
+      <div class="day-list">${daysHtml}</div>
+      <div class="footer-row">
+        <div class="footer-note">Progress saves automatically.</div>
+        <button class="reset-btn" id="resetBtn">Reset all progress</button>
+      </div>
+    `;
+
+    // wire events
+    document.querySelectorAll('.week-tab').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        currentWeek = parseInt(el.dataset.week, 10);
+        render();
+      });
+    });
+    document.querySelectorAll('[data-expand]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('block-check')) return;
+        const [w,d] = el.dataset.expand.split('|').map(Number);
+        toggleExpand(w,d);
+      });
+    });
+    document.querySelectorAll('[data-toggle]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const [w,d,key] = el.dataset.toggle.split('|');
+        toggleBlock(parseInt(w,10), parseInt(d,10), key);
+      });
+    });
+    const resetBtn = document.getElementById('resetBtn');
+    if(resetBtn) resetBtn.addEventListener('click', resetAll);
+  }
+
+  /* ---------------- INIT ---------------- */
+  (async function init(){
+    await loadProgress();
+    // auto-expand first incomplete day of week 1 on first load
+    for(let d=1; d<=DAYS; d++){
+      if(checkedCount(1,d) < BLOCK_DEFS.length){
+        expanded[sessionKey(1,d)] = true;
+        break;
+      }
+    }
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
